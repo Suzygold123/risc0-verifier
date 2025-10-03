@@ -21,6 +21,7 @@ extern crate std;
 
 extern crate alloc;
 extern crate core;
+use alloc::vec::Vec;
 
 pub use context::SegmentInfo;
 pub use key::Vk;
@@ -98,3 +99,18 @@ pub fn v2_3() -> impl Verifier {
 pub fn v3_0() -> impl Verifier {
     context::v3::V3::v3_0()
 }
+/// A minimal wrapper for runtime usage: takes raw CBOR bytes for
+/// the verification key, proof, and journal, and returns true/false.
+pub fn verify_simple(vk_bytes: &[u8], proof_bytes: &[u8], journal_bytes: &[u8]) -> bool {
+    // Try to decode CBOR into the types
+    let vk: Result<Vk, _> = ciborium::from_reader(vk_bytes);
+    let proof: Result<Proof, _> = ciborium::from_reader(proof_bytes);
+    let journal: Result<Journal, _> = ciborium::from_reader(journal_bytes);
+
+    if let (Ok(vk), Ok(proof), Ok(journal)) = (vk, proof, journal) {
+        verify(&v1_2(), vk, proof, journal).is_ok()
+    } else {
+        false
+    }
+}
+
